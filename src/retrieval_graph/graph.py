@@ -103,7 +103,7 @@ async def retrieve(
     configuration = Configuration.from_runnable_config(config)
     with retrieval.make_retriever(config, alternate_milvus_uri = configuration.alternate_milvus_uri) as retriever:
         response = await retriever.ainvoke(state.queries[-1], config)
-        return {"retrieved_docs": response}
+        return {"retrieved_docs": response[:2]}
 
 
 async def respond(
