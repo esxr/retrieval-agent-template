@@ -32,7 +32,7 @@ class CommonConfiguration:
     )
 
     retriever_provider: Annotated[
-        Literal["elastic", "elastic-local", "pinecone", "mongodb", "milvus"],
+        Literal["elastic", "elastic-local", "pinecone", "milvus","chromadb"],
         {"__template_metadata__": {"kind": "retriever"}},
     ] = field(
         default="milvus",
@@ -46,6 +46,12 @@ class CommonConfiguration:
         metadata={
             "description": "Additional keyword arguments to pass to the search function of the retriever."
         },
+    )
+
+
+    collection_name: str = field(
+        default="jira_issues",
+        metadata={"description": "Collection/Index name to store Jira issues."},
     )
 
     @classmethod
@@ -107,6 +113,36 @@ class IndexConfiguration(CommonConfiguration):
             list[str]: A list of URLs parsed from the comma-separated string.
         """
         return [url.strip() for url in self.starter_urls.split(",") if url.strip()]
+
+@dataclass(kw_only=True)
+class JiraConfiguration(CommonConfiguration):
+    """Configuration class for indexing and retrieval operations.
+
+    This class defines the parameters needed for configuring the indexing and
+    retrieval processes, including user identification, embedding model selection,
+    retriever provider choice, and search parameters.
+    """
+
+    jira_email: str = field(
+        default="",
+        metadata={"description": "Jira account email for authentication."},
+    )
+
+    jira_api_token: str = field(
+        default="",
+        metadata={"description": "Jira API token."},
+    )
+
+    jira_site: str = field(
+        default="",
+        metadata={"description": "Base URL of your Jira site, e.g. https://yourcompany.atlassian.net"},
+    )
+
+    jql: str = field(
+        default="",
+        metadata={"description": "Default JQL query to fetch Jira issues. eg. 'project=AGAILEP'"},
+    )
+
 
 @dataclass(kw_only=True)
 class Configuration(CommonConfiguration):
