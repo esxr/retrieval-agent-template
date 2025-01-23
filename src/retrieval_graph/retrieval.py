@@ -108,13 +108,18 @@ def make_milvus_retriever(
 ) -> Generator[VectorStoreRetriever, None, None]:
     """Configure this agent to use milvus lite file based uri to store the vector index."""
     from langchain_milvus.vectorstores import Milvus
-
+    index_params = {
+    "metric_type": "IP",  
+    "index_type": "IVF_FLAT",    
+    "params": {},   
+    }   
     milvus_uri = kwargs.get("alternate_milvus_uri", os.environ.get("MILVUS_DB"))
     vstore = Milvus (
         embedding_function=embedding_model,
         collection_name=configuration.collection_name,
         connection_args={"uri": milvus_uri},
-        auto_id=True
+        auto_id=True,
+        index_params=index_params
     )
     yield vstore.as_retriever()
 
@@ -128,7 +133,7 @@ def make_chromadb_retriever(
 
     vstore = Chroma(
         collection_name=configuration.collection_name,
-        persist_directory=os.environ.get("CHROMADB_PERSIST_DIR", "Indexes/chroma.db"),
+        persist_directory=os.environ.get("CHROMADB_PERSIST_DIR", "indexes/custom.db"),
         embedding_function=embedding_model,
     )
     search_kwargs = configuration.search_kwargs
