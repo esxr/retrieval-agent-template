@@ -38,6 +38,7 @@ def reduce_docs(
         Sequence[str],
         str,
         Literal["delete"],
+        Literal["ingest"],
         Literal["crawl"],
     ],
 ) -> Sequence[Document]:
@@ -53,6 +54,8 @@ def reduce_docs(
             or the literals "delete", or "crawl".
     """
     if new == "crawl":
+        return []
+    if new == "ingest":
         return []
     if new == "delete":
         return []
