@@ -81,7 +81,7 @@ class CustomDocsConfiguration(CommonConfiguration):
     """Configuration class for custom document ingestion."""
 
     directory_path: str = field(
-        default="",
+        default="./docs",
         metadata={
             "description": "Path to the directory containing your custom docs (PDF, Markdown, CSV, etc.)"
         },
