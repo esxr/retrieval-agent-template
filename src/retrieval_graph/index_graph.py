@@ -7,6 +7,7 @@ from langchain_community.utilities import ApifyWrapper
 from langchain_community.document_loaders import ApifyDatasetLoader
 from langchain_core.documents import Document
 from langchain_core.runnables import RunnableConfig
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langgraph.graph import StateGraph
 from urllib.parse import urlparse
 
@@ -56,7 +57,7 @@ def apify_crawl(configuration: IndexConfiguration):
         loader = ApifyDatasetLoader(
             dataset_id=dataset_id,
             dataset_mapping_function=lambda item: Document(
-                page_content=item.get('html') or item.get('text') or "", metadata={"url": item["url"]}
+                page_content=item.get('text') or "", metadata={"url": item["url"]}
             ),
         )
     else:
@@ -99,9 +100,11 @@ async def index_docs(
         raise ValueError("Configuration required to run index_docs.")
     with retrieval.make_retriever(config) as retriever:
         configuration = IndexConfiguration.from_runnable_config(config)
-        if not state.docs and configuration.starter_urls:
+        if not state.docs and (configuration.starter_urls or configuration.apify_dataset_id):
             print(f"starting crawl ...")
-            state.docs = apify_crawl (configuration)
+            crawled_docs = apify_crawl(configuration)
+            text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
+            state.docs = text_splitter.split_documents(crawled_docs)
         stamped_docs = ensure_docs_have_user_id(state.docs, config)
         batch_size = configuration.batch_size
         for i, batch in enumerate(chunk_documents(stamped_docs, batch_size)):

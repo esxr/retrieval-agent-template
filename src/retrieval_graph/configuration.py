@@ -44,7 +44,7 @@ class CommonConfiguration:
     )
 
     search_kwargs: dict[str, Any] = field(
-        default_factory=dict,
+        default_factory=lambda: {"k": 10},
         metadata={
             "description": "Additional keyword arguments to pass to the search function of the retriever."
         },
@@ -132,7 +132,7 @@ class IndexConfiguration(CommonConfiguration):
     )
 
     batch_size: int = field(
-        default=50,
+        default=400,
         metadata={
             "description": "Number of documents to index in a single batch."
         },
@@ -220,3 +220,34 @@ class Configuration(CommonConfiguration):
             "description": "The language model used for processing and refining queries. Should be in the form: provider/model-name."
         },
     )
+
+    embedding_model: Annotated[
+        str,
+        {"__template_metadata__": {"kind": "embeddings"}},
+    ] = field(
+        default="openai/text-embedding-3-large",
+        metadata={
+            "description": "Name of the embedding model to use. Must be a valid embedding model name."
+        },
+    )
+
+    retriever_provider: Annotated[
+        Literal["elastic", "elastic-local", "pinecone", "mongodb", "milvus"],
+        {"__template_metadata__": {"kind": "retriever"}},
+    ] = field(
+        default="milvus",
+        metadata={
+            "description": "The vector store provider to use for retrieval. Options are 'elastic', 'pinecone', 'mongodb', or, 'milvus'."
+        },
+    )
+
+    search_kwargs: dict[str, Any] = field(
+        default_factory=dict,
+        metadata={
+            "description": "Additional keyword arguments to pass to the search function of the retriever."
+        },
+    )
+
+    def __post_init__(self):
+        # Always ensure "k"=10 if not already set
+        self.search_kwargs.setdefault("k", 10)

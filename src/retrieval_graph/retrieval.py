@@ -113,7 +113,8 @@ def make_milvus_retriever(
     "index_type": "IVF_FLAT",    
     "params": {},   
     }   
-    milvus_uri = kwargs.get("alternate_milvus_uri", os.environ.get("MILVUS_DB"))
+
+    milvus_uri = kwargs.get("alternate_milvus_uri") or os.environ.get("MILVUS_DB")
     vstore = Milvus (
         embedding_function=embedding_model,
         collection_name=configuration.collection_name,
@@ -121,7 +122,7 @@ def make_milvus_retriever(
         auto_id=True,
         index_params=index_params
     )
-    yield vstore.as_retriever()
+    yield vstore.as_retriever(search_kwargs=configuration.search_kwargs)
 
 
 @contextmanager
