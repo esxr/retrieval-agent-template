@@ -1,4 +1,4 @@
-# index_graph.py
+# jira_index_graph.py
 
 from langchain_core.runnables import RunnableConfig
 from langgraph.graph import StateGraph

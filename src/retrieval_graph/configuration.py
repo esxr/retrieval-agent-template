@@ -10,6 +10,8 @@ from langchain_core.runnables import RunnableConfig, ensure_config
 from retrieval_graph import prompts
 
 
+
+
 @dataclass(kw_only=True)
 class CommonConfiguration:
     """Configuration class for indexing and retrieval operations.
@@ -73,6 +75,43 @@ class CommonConfiguration:
         return cls(**{k: v for k, v in configurable.items() if k in _fields})
     
 T = TypeVar("T", bound=CommonConfiguration)
+
+@dataclass(kw_only=True)
+class CustomDocsConfiguration(CommonConfiguration):
+    """Configuration class for custom document ingestion."""
+
+    directory_path: str = field(
+        default="",
+        metadata={
+            "description": "Path to the directory containing your custom docs (PDF, Markdown, CSV, etc.)"
+        },
+    )
+
+    # Optionally, if you want chunk size, overlap, etc. to be configurable:
+    chunk_size: int = field(
+        default=500,
+        metadata={
+            "description": "Chunk size for splitting documents."
+        },
+    )
+    chunk_overlap: int = field(
+        default=100,
+        metadata={
+            "description": "Chunk overlap for splitting documents."
+        },
+    )
+
+    # You may also want to override or add any additional fields or methods here
+
+    @classmethod
+    def from_runnable_config(
+        cls: Type[T], config: Optional[RunnableConfig] = None
+    ) -> T:
+        config = ensure_config(config)
+        configurable = config.get("configurable") or {}
+        # Filter out only the fields that exist in this dataclass
+        _fields = {f.name for f in fields(cls) if f.init}
+        return cls(**{k: v for k, v in configurable.items() if k in _fields})
 
 @dataclass(kw_only=True)
 class IndexConfiguration(CommonConfiguration):
