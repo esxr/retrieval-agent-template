@@ -1,4 +1,5 @@
 # custom_docs_ingester.py
+
 import os
 import re
 from typing import Optional, List
@@ -49,9 +50,9 @@ class CustomDocsIngester:
         """Cleans the input text by removing unnecessary characters and whitespace."""
         if not text:
             return ""
+        # Collapse multiple whitespace
         text = re.sub(r'\s+', ' ', text).strip()
-        # Remove any disallowed characters if you want to.
-        # Example: alphanumeric, punctuation, and some symbols
+        # Optionally remove anything that's not a typical text char
         allowed_chars_regex = r'[^a-zA-Z0-9\s.,!?;:\-–_()\[\]\'"“”‘’]'
         text = re.sub(allowed_chars_regex, '', text)
         return text
@@ -66,10 +67,19 @@ class CustomDocsIngester:
         return splitter.split_text(text)
 
     def _chunk_text_markdown(self, text: str) -> List[str]:
-        """Chunking strategy for Markdown: Splits based on heading structure."""
-        # Adjust headers_to_split_on if you like
+        """
+        Chunking strategy for Markdown: Splits based on heading structure.
+        Make sure each entry in `headers_to_split_on` is a (regex_pattern, section_name) tuple.
+        """
         splitter = MarkdownHeaderTextSplitter(
-            headers_to_split_on=["#", "##", "###", "####", "#####", "######"]
+            headers_to_split_on=[
+                (r"^# ", "Header 1"),
+                (r"^## ", "Header 2"),
+                (r"^### ", "Header 3"),
+                (r"^#### ", "Header 4"),
+                (r"^##### ", "Header 5"),
+                (r"^###### ", "Header 6"),
+            ]
         )
         return splitter.split_text(text)
 
@@ -81,7 +91,6 @@ class CustomDocsIngester:
 
             loader = None
             if filename.lower().endswith(".pdf"):
-                # Optionally pass extract_images=True if you plan to handle images:
                 loader = PDFPlumberLoader(file_path, extract_images=True)
             elif filename.lower().endswith(".md"):
                 loader = UnstructuredMarkdownLoader(file_path)
@@ -105,7 +114,8 @@ class CustomDocsIngester:
                 image_loader = UnstructuredImageLoader(image_path)
                 image_docs = image_loader.load()
                 for image_doc in image_docs:
-                    cleaned_text = self._clean_text(image_doc.page_content)
+                    # Always convert to string
+                    cleaned_text = self._clean_text(image_doc.page_content or "")
                     final_docs.append(
                         Document(
                             page_content=cleaned_text,
@@ -120,24 +130,29 @@ class CustomDocsIngester:
             raw_text = doc.page_content or ""
             cleaned_text = self._clean_text(raw_text)
 
-            # Decide chunking strategy by file type in doc.metadata
-            source_path = doc.metadata.get('source', '').lower()
+            # Decide chunking strategy by file extension in doc.metadata.source
+            source_path = (doc.metadata.get('source') or "").lower()
             if source_path.endswith(".pdf"):
                 chunks = self._chunk_text_pdf(cleaned_text)
             elif source_path.endswith(".md"):
                 chunks = self._chunk_text_markdown(cleaned_text)
             elif source_path.endswith(".csv"):
-                # fallback to PDF style chunking for CSV or another approach
-                chunks = self._chunk_text_pdf(cleaned_text)
+                chunks = self._chunk_text_pdf(cleaned_text)  # Fallback approach
             else:
                 # If unsupported or unknown extension, skip
                 continue
 
             # Create new chunked Document objects
             for chunk in chunks:
+                # Double-check chunk is a string
+                if not isinstance(chunk, str):
+                    chunk = str(chunk)
+
                 meta_copy = doc.metadata.copy()
                 if self.user_id:
                     meta_copy["user_id"] = self.user_id
+
+                # Now create a Document with a guaranteed string page_content
                 chunked_documents.append(
                     Document(page_content=chunk, metadata=meta_copy)
                 )
